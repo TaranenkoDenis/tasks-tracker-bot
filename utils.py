@@ -4,7 +4,7 @@ import logging.handlers
 import time
 from datetime import datetime
 
-from singleton import bot, db
+from singleton import db
 
 logger = logging.getLogger(__name__)
 
@@ -63,3 +63,9 @@ def change_status_task(chat_id, user_id, username, task_id, status):
 
     db.hset(f'/tasks/chat_id/{chat_id}', task_id, encode(task))
     return task
+
+
+def get_formatted_username(username):
+    if username[0] == '@':
+        return username
+    return f'@{username}'

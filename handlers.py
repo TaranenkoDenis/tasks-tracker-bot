@@ -4,7 +4,8 @@ from tempfile import TemporaryFile
 
 from singleton import bot, db
 from telebot import types
-from utils import (Status, change_status_task, decode, encode, readable_time)
+from utils import (Status, change_status_task, decode, encode, readable_time,
+                   get_formatted_username)
 from validator import arg, status_enum, validate
 
 log = logging.getLogger(__name__)
@@ -45,7 +46,10 @@ def my_tasks(message, status, offset):
 def get_tasks(chat_id, status, offset=0, user_id=None):
     last_task_id = db.get(f'/tasks/chat_id/{chat_id}/last_task_id')
     task_id = int(last_task_id) if last_task_id else 0
-    user_id = None if (user_id == 'None' or not user_id) else int(user_id)
+
+    user_id = None if (
+        user_id == 'None' or user_id is None) else int(user_id)
+
     offset = int(offset)
     offset_for_calculating = offset
     tasks = {}
@@ -60,9 +64,14 @@ def get_tasks(chat_id, status, offset=0, user_id=None):
             continue
 
         task = decode(task)
+        task['assignee_id'] = str(task['assignee_id'])
+        user_id = str(user_id) if user_id is not None else None
 
         if task['status'].upper() != status or (
-                user_id is not None and task['assignee_id'] != user_id):
+                user_id is not None and
+                task['assignee_id'] != user_id):
+            print('-' * 75)
+            print(f'Current task: {task}')
             continue
 
         if offset_for_calculating > 0:
@@ -117,7 +126,8 @@ def do(message, task_id):
     if task_id:
         task = change_status_task(message.chat.id,
                                   message.from_user.id,
-                                  message.from_user.username,
+                                  get_formatted_username(
+                                      message.from_user.username),
                                   task_id, status=Status.DO)
         if task:
             return bot.reply_to(message, f'''Title: {task["title"]}
@@ -141,7 +151,8 @@ def todo(message, task_id):
     if task_id:
         task = change_status_task(message.chat.id,
                                   message.from_user.id,
-                                  message.from_user.username,
+                                  get_formatted_username(
+                                      message.from_user.username),
                                   task_id, status=Status.TODO)
         if task:
             return bot.reply_to(message, f'''Title: {task["title"]}
@@ -165,7 +176,8 @@ def done(message, task_id):
     if task_id:
         task = change_status_task(message.chat.id,
                                   message.from_user.id,
-                                  message.from_user.username,
+                                  get_formatted_username(
+                                      message.from_user.username),
                                   task_id, status=Status.DONE)
         if task:
             return bot.reply_to(message, f'''Title: {task["title"]}
@@ -332,7 +344,7 @@ def callback_inline(call):
         cmd, status, user_id, username, task_id = data
 
         task = change_status_task(call.message.chat.id,
-                                  user_id, username,
+                                  user_id, get_formatted_username(username),
                                   task_id, status)
 
         if task is None:
