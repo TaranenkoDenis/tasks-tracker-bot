@@ -70,8 +70,6 @@ def get_tasks(chat_id, status, offset=0, user_id=None):
         if task['status'].upper() != status or (
                 user_id is not None and
                 task['assignee_id'] != user_id):
-            print('-' * 75)
-            print(f'Current task: {task}')
             continue
 
         if offset_for_calculating > 0:
@@ -256,7 +254,6 @@ def update(message):
 
     task = db.hget(f'/tasks/chat_id/{message.chat.id}', task_id)
 
-    print(f'task = {task}')
     task = decode(task)
     task['title'] = title
     task['description'] = description
@@ -340,7 +337,6 @@ def callback_inline(call):
             reply_markup=keyboard,
         )
     elif data[0] == 'set_status_task':
-        print(data)
         cmd, status, user_id, username, task_id = data
 
         task = change_status_task(call.message.chat.id,
