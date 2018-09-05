@@ -290,36 +290,41 @@ def get_task(chat_id, user_id, username, task_id):
     task = decode(task)
 
     response = f'''Task id: {task_id}
-# Title: {task["title"]}
-# Status: {task["status"]}
-# Created: {readable_time(task["created"])}
-# Modified: {readable_time(task["modified"])}
-# Assignee: {task["assignee"]}
-# Assignee id: {task["assignee_id"]}
-# Description:
-# {task["description"]}'''
+Title: {task["title"]}
+Status: {task["status"]}
+Created: {readable_time(task["created"])}
+Modified: {readable_time(task["modified"])}
+Assignee: {task["assignee"]}
+Assignee id: {task["assignee_id"]}
+Description:
+{task["description"]}'''
+
+    return response, get_keyboard_change_status(user_id, username, task_id)
+
+
+def get_keyboard_change_status(user_id, username, task_id):
     keyboard = types.InlineKeyboardMarkup(row_width=3)
     btns = [
         types.InlineKeyboardButton(
-            text='Make TODO',
+            text='TODO',
             # cmd, status, user_id, username, task_id=data
             callback_data=f"set_status_task:{Status.TODO}:{user_id}:"
                           f"{username}:{task_id}"
         ),
         types.InlineKeyboardButton(
-            text='Make DO',
+            text='DO',
             callback_data=f"set_status_task:{Status.DO}:{user_id}:"
                           f"{username}:{task_id}"
         ),
         types.InlineKeyboardButton(
-            text='Make DONE',
+            text='DONE',
             callback_data=f"set_status_task:{Status.DONE}:{user_id}:"
                           f"{username}:{task_id}"
         )
     ]
 
     keyboard.add(*btns)
-    return response, keyboard
+    return keyboard
 
 
 @bot.callback_query_handler(func=lambda call: call.message)
@@ -344,13 +349,20 @@ def callback_inline(call):
                                   task_id, status)
 
         if task is None:
-            return 'No task with such id', None
-
-        return bot.reply_to(call.message, f'''Title: {task["title"]}
+            response = 'No task with such id'
+        else:
+            response = f'''Title: {task["title"]}
 Status: {task["status"]}
 Assignee: {task["assignee"]}
 Description:
-{task["description"]}''')
+{task["description"]}'''
+
+        return bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=response,
+            reply_markup=get_keyboard_change_status(user_id, username, task_id)
+        )
 
     # If message from inline mode
     # elif call.inline_message_id:

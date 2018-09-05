@@ -4,7 +4,7 @@ import logging.handlers
 import time
 from datetime import datetime
 
-from singleton import db
+from singleton import db, bot
 
 logger = logging.getLogger(__name__)
 
